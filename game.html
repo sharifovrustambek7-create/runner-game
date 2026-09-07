@@ -1,115 +1,344 @@
 <!DOCTYPE html>
-<html>
+<html lang="uz">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>STREET RUNNER</title>
 <style>
-body{margin:0;background:#111;color:white;font-family:Arial;text-align:center;overflow:hidden}
-h1{margin:25px 0 10px}
-button{font-size:22px;padding:15px 30px;border:0;border-radius:12px;margin:8px}
-#game{display:none}
-canvas{background:#333;display:block;margin:auto}
-#hud{font-size:20px;padding:10px}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#111;font-family:Arial;color:#fff}
+body{touch-action:none}
+#menu{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:linear-gradient(#172033,#111)}
+#menu h1{font-size:38px;margin:0 0 10px}
+#menu p{font-size:17px;margin:0 20px 25px}
+#start,#again{border:0;border-radius:16px;padding:15px 38px;font-size:21px;font-weight:bold;background:#22c55e;color:white}
+#game{display:none;position:fixed;inset:0}
+#hud{position:absolute;top:8px;left:0;right:0;z-index:5;display:flex;justify-content:space-around;font-size:18px;font-weight:bold;text-shadow:0 2px 4px #000}
+canvas{width:100%;height:100%;display:block}
+#over{display:none;position:absolute;inset:0;z-index:10;align-items:center;justify-content:center;flex-direction:column;text-align:center;background:#000b}
+#over h2{font-size:32px;margin:0 0 12px}
+#over p{font-size:19px}
 </style>
 </head>
 <body>
 
 <div id="menu">
 <h1>🏃 STREET RUNNER</h1>
-<p>🪙 Coin yig'ing va to'siqlardan qoching!</p>
-<button onclick="start()">BOSHLASH</button>
+<p>Qo‘l bilan suring va to‘siqlardan qoching!</p>
+<button id="start">BOSHLASH</button>
 </div>
 
 <div id="game">
-<div id="hud">🪙 <span id="coin">0</span> &nbsp; 🏆 <span id="score">0</span></div>
-<canvas id="c" width="360" height="600"></canvas>
-<button onclick="left()">⬅️</button>
-<button onclick="jump()">⬆️</button>
-<button onclick="right()">➡️</button>
+<div id="hud">
+<span>🪙 <b id="coins">0</b></span>
+<span>🏆 <b id="score">0</b></span>
+<span>⚡ <b id="speed">1</b></span>
+</div>
+<canvas id="canvas"></canvas>
+
+<div id="over">
+<h2>💥 O‘YIN TUGADI</h2>
+<p>🏆 Ball: <b id="finalScore">0</b></p>
+<p>🪙 Coin: <b id="finalCoins">0</b></p>
+<button id="again">QAYTA O‘YNASH</button>
+</div>
 </div>
 
 <script>
-const c=document.getElementById("c"),x=c.getContext("2d");
-let lane=1,score=0,coins=0,running=false,jy=0,vy=0;
-let obs=[],cs=[];
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
 
-function X(n){return 90+n*90}
+let W=0,H=0;
+let running=false;
+let lane=1;
+let score=0;
+let coins=0;
+let speed=6;
+let spawnTimer=0;
+let coinTimer=0;
+let obstacles=[];
+let coinList=[];
+let lastTime=0;
 
-function start(){
- document.getElementById("menu").style.display="none";
- document.getElementById("game").style.display="block";
- lane=1;score=0;coins=0;jy=0;vy=0;obs=[];cs=[];
- running=true;loop();
+const player={
+  jumpY:0,
+  vy:0,
+  sliding:false,
+  slideTime:0
+};
+
+function resize(){
+  W=window.innerWidth;
+  H=window.innerHeight;
+  canvas.width=W;
+  canvas.height=H;
+}
+window.addEventListener("resize",resize);
+resize();
+
+function laneX(n){
+  return W/2+(n-1)*Math.min(W*.24,110);
 }
 
-function left(){if(running)lane=Math.max(0,lane-1)}
-function right(){if(running)lane=Math.min(2,lane+1)}
-function jump(){if(running&&jy==0){vy=-16}}
-
-function loop(){
- if(!running)return;
-
- x.fillStyle="#111";x.fillRect(0,0,360,600);
- x.fillStyle="#333";x.fillRect(45,0,270,600);
-
- x.strokeStyle="#aaa";x.setLineDash([20,20]);
- for(let i=1;i<3;i++){
-  x.beginPath();x.moveTo(45+i*90,0);x.lineTo(45+i*90,600);x.stroke()
- }
- x.setLineDash([]);
-
- if(vy!=0||jy!=0){
-  jy+=vy;vy+=.8;
-  if(jy>=0){jy=0;vy=0}
- }
-
- if(Math.random()<.025)obs.push({l:Math.floor(Math.random()*3),y:-50});
- if(Math.random()<.025)cs.push({l:Math.floor(Math.random()*3),y:-20});
-
- obs.forEach(o=>o.y+=5);
- cs.forEach(o=>o.y+=5);
-
- obs=obs.filter(o=>o.y<650);
- cs=cs.filter(o=>o.y<650);
-
- x.font="45px Arial";x.textAlign="center";
- x.fillText("🏃",X(lane),520+jy);
-
- x.font="40px Arial";
- obs.forEach(o=>x.fillText("🚧",X(o.l),o.y));
-
- x.font="30px Arial";
- cs.forEach(o=>x.fillText("🪙",X(o.l),o.y));
-
- for(let i=cs.length-1;i>=0;i--){
-  if(cs[i].l==lane&&Math.abs(cs[i].y-(520+jy))<40){
-   coins++;cs.splice(i,1)
-  }
- }
-
- for(let o of obs){
-  if(o.l==lane&&Math.abs(o.y-(520+jy))<45&&jy>-30){
-   running=false;
-   alert("💥 O'yin tugadi! Ball: "+Math.floor(score)+" | Coin: "+coins);
-   document.getElementById("game").style.display="none";
-   document.getElementById("menu").style.display="block";
-   return;
-  }
- }
-
- score+=.1;
- document.getElementById("score").textContent=Math.floor(score);
- document.getElementById("coin").textContent=coins;
-
- requestAnimationFrame(loop);
+function playerY(){
+  return H-145;
 }
 
-document.addEventListener("keydown",e=>{
- if(e.key=="ArrowLeft")left();
- if(e.key=="ArrowRight")right();
- if(e.key=="ArrowUp"||e.key==" ")jump();
-});
+function reset(){
+  lane=1;
+  score=0;
+  coins=0;
+  speed=6;
+  spawnTimer=0;
+  coinTimer=0;
+  obstacles=[];
+  coinList=[];
+  player.jumpY=0;
+  player.vy=0;
+  player.sliding=false;
+  player.slideTime=0;
+  updateHud();
+}
+
+function startGame(){
+  document.getElementById("menu").style.display="none";
+  document.getElementById("game").style.display="block";
+  document.getElementById("over").style.display="none";
+  reset();
+  running=true;
+  lastTime=performance.now();
+  requestAnimationFrame(loop);
+}
+
+function endGame(){
+  running=false;
+  document.getElementById("finalScore").textContent=Math.floor(score);
+  document.getElementById("finalCoins").textContent=coins;
+  document.getElementById("over").style.display="flex";
+}
+
+function updateHud(){
+  document.getElementById("coins").textContent=coins;
+  document.getElementById("score").textContent=Math.floor(score);
+  document.getElementById("speed").textContent=Math.floor(speed/5);
+}
+
+function moveLeft(){
+  if(running)lane=Math.max(0,lane-1);
+}
+
+function moveRight(){
+  if(running)lane=Math.min(2,lane+1);
+}
+
+function jump(){
+  if(!running)return;
+  if(player.jumpY===0&&!player.sliding){
+    player.vy=-16;
+  }
+}
+
+function slide(){
+  if(!running)return;
+  if(player.jumpY===0){
+    player.sliding=true;
+    player.slideTime=450;
+  }
+}
+
+function spawnObstacle(){
+  obstacles.push({
+    lane:Math.floor(Math.random()*3),
+    y:-80,
+    type:Math.random()<.25?"low":"block"
+  });
+}
+
+function spawnCoin(){
+  coinList.push({
+    lane:Math.floor(Math.random()*3),
+    y:-40
+  });
+}
+
+function drawRoad(){
+  ctx.fillStyle="#0d1720";
+  ctx.fillRect(0,0,W,H);
+
+  ctx.fillStyle="#34383d";
+  ctx.fillRect(W*.12,0,W*.76,H);
+
+  ctx.fillStyle="#262a2e";
+  ctx.fillRect(W*.12,0,W*.03,H);
+  ctx.fillRect(W*.85,0,W*.03,H);
+
+  ctx.strokeStyle="#888";
+  ctx.lineWidth=3;
+  ctx.setLineDash([30,30]);
+
+  for(let i=1;i<3;i++){
+    const x=W*.12+W*.76*i/3;
+    ctx.beginPath();
+    ctx.moveTo(x,0);
+    ctx.lineTo(x,H);
+    ctx.stroke();
+  }
+
+  ctx.setLineDash([]);
+}
+
+function drawPlayer(){
+  const x=laneX(lane);
+  const y=playerY()+player.jumpY;
+
+  ctx.textAlign="center";
+  ctx.textBaseline="middle";
+
+  if(player.sliding){
+    ctx.font="48px Arial";
+    ctx.fillText("🏃",x,y+25);
+  }else{
+    ctx.font="55px Arial";
+    ctx.fillText("🏃",x,y);
+  }
+}
+
+function drawObjects(){
+  ctx.textAlign="center";
+  ctx.textBaseline="middle";
+
+  for(const o of obstacles){
+    const x=laneX(o.lane);
+
+    if(o.type==="low"){
+      ctx.font="48px Arial";
+      ctx.fillText("🚧",x,o.y);
+    }else{
+      ctx.font="52px Arial";
+      ctx.fillText("🚧",x,o.y);
+    }
+  }
+
+  for(const c of coinList){
+    ctx.font="32px Arial";
+    ctx.fillText("🪙",laneX(c.lane),c.y);
+  }
+}
+
+function update(dt){
+  player.jumpY+=player.vy*(dt/16);
+  player.vy+=.8*(dt/16);
+
+  if(player.jumpY>0){
+    player.jumpY=0;
+    player.vy=0;
+  }
+
+  if(player.slideTime>0){
+    player.slideTime-=dt;
+    if(player.slideTime<=0){
+      player.slideTime=0;
+      player.sliding=false;
+    }
+  }
+
+  for(const o of obstacles)o.y+=speed*(dt/16);
+  for(const c of coinList)c.y+=speed*(dt/16);
+
+  spawnTimer+=dt;
+  coinTimer+=dt;
+
+  const obstacleDelay=Math.max(500,900-speed*35);
+
+  if(spawnTimer>obstacleDelay){
+    spawnObstacle();
+    spawnTimer=0;
+  }
+
+  if(coinTimer>650){
+    spawnCoin();
+    coinTimer=0;
+  }
+
+  obstacles=obstacles.filter(o=>o.y<H+100);
+  coinList=coinList.filter(c=>c.y<H+100);
+
+  const py=playerY()+player.jumpY;
+
+  for(let i=coinList.length-1;i>=0;i--){
+    const c=coinList[i];
+
+    if(c.lane===lane&&Math.abs(c.y-py)<55){
+      coins++;
+      coinList.splice(i,1);
+    }
+  }
+
+  for(const o of obstacles){
+    if(o.lane!==lane)continue;
+
+    if(Math.abs(o.y-py)<60){
+      if(player.jumpY>-45&&!player.sliding){
+        endGame();
+        return;
+      }
+    }
+  }
+
+  score+=dt*.01;
+  speed+=dt*.0008;
+  updateHud();
+}
+
+function loop(time){
+  if(!running)return;
+
+  const dt=Math.min(40,time-lastTime);
+  lastTime=time;
+
+  drawRoad();
+  update(dt);
+
+  if(running){
+    drawObjects();
+    drawPlayer();
+    requestAnimationFrame(loop);
+  }
+}
+
+let touchStartX=0;
+let touchStartY=0;
+
+canvas.addEventListener("touchstart",function(e){
+  const t=e.changedTouches[0];
+  touchStartX=t.clientX;
+  touchStartY=t.clientY;
+},{passive:true});
+
+canvas.addEventListener("touchend",function(e){
+  const t=e.changedTouches[0];
+
+  const dx=t.clientX-touchStartX;
+  const dy=t.clientY-touchStartY;
+
+  const ax=Math.abs(dx);
+  const ay=Math.abs(dy);
+
+  if(Math.max(ax,ay)<35)return;
+
+  if(ax>ay){
+    if(dx>0)moveRight();
+    else moveLeft();
+  }else{
+    if(dy<0)jump();
+    else slide();
+  }
+},{passive:true});
+
+document.getElementById("start").addEventListener("click",startGame);
+document.getElementById("again").addEventListener("click",startGame);
+
+reset();
 </script>
 </body>
 </html>

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>STREET RUNNER</title>
+<style>
+body{margin:0;background:#111;color:white;font-family:Arial;text-align:center;overflow:hidden}
+h1{margin:25px 0 10px}
+button{font-size:22px;padding:15px 30px;border:0;border-radius:12px;margin:8px}
+#game{display:none}
+canvas{background:#333;display:block;margin:auto}
+#hud{font-size:20px;padding:10px}
+</style>
+</head>
+<body>
+
+<div id="menu">
+<h1>🏃 STREET RUNNER</h1>
+<p>🪙 Coin yig'ing va to'siqlardan qoching!</p>
+<button onclick="start()">BOSHLASH</button>
+</div>
+
+<div id="game">
+<div id="hud">🪙 <span id="coin">0</span> &nbsp; 🏆 <span id="score">0</span></div>
+<canvas id="c" width="360" height="600"></canvas>
+<button onclick="left()">⬅️</button>
+<button onclick="jump()">⬆️</button>
+<button onclick="right()">➡️</button>
+</div>
+
+<script>
+const c=document.getElementById("c"),x=c.getContext("2d");
+let lane=1,score=0,coins=0,running=false,jy=0,vy=0;
+let obs=[],cs=[];
+
+function X(n){return 90+n*90}
+
+function start(){
+ document.getElementById("menu").style.display="none";
+ document.getElementById("game").style.display="block";
+ lane=1;score=0;coins=0;jy=0;vy=0;obs=[];cs=[];
+ running=true;loop();
+}
+
+function left(){if(running)lane=Math.max(0,lane-1)}
+function right(){if(running)lane=Math.min(2,lane+1)}
+function jump(){if(running&&jy==0){vy=-16}}
+
+function loop(){
+ if(!running)return;
+
+ x.fillStyle="#111";x.fillRect(0,0,360,600);
+ x.fillStyle="#333";x.fillRect(45,0,270,600);
+
+ x.strokeStyle="#aaa";x.setLineDash([20,20]);
+ for(let i=1;i<3;i++){
+  x.beginPath();x.moveTo(45+i*90,0);x.lineTo(45+i*90,600);x.stroke()
+ }
+ x.setLineDash([]);
+
+ if(vy!=0||jy!=0){
+  jy+=vy;vy+=.8;
+  if(jy>=0){jy=0;vy=0}
+ }
+
+ if(Math.random()<.025)obs.push({l:Math.floor(Math.random()*3),y:-50});
+ if(Math.random()<.025)cs.push({l:Math.floor(Math.random()*3),y:-20});
+
+ obs.forEach(o=>o.y+=5);
+ cs.forEach(o=>o.y+=5);
+
+ obs=obs.filter(o=>o.y<650);
+ cs=cs.filter(o=>o.y<650);
+
+ x.font="45px Arial";x.textAlign="center";
+ x.fillText("🏃",X(lane),520+jy);
+
+ x.font="40px Arial";
+ obs.forEach(o=>x.fillText("🚧",X(o.l),o.y));
+
+ x.font="30px Arial";
+ cs.forEach(o=>x.fillText("🪙",X(o.l),o.y));
+
+ for(let i=cs.length-1;i>=0;i--){
+  if(cs[i].l==lane&&Math.abs(cs[i].y-(520+jy))<40){
+   coins++;cs.splice(i,1)
+  }
+ }
+
+ for(let o of obs){
+  if(o.l==lane&&Math.abs(o.y-(520+jy))<45&&jy>-30){
+   running=false;
+   alert("💥 O'yin tugadi! Ball: "+Math.floor(score)+" | Coin: "+coins);
+   document.getElementById("game").style.display="none";
+   document.getElementById("menu").style.display="block";
+   return;
+  }
+ }
+
+ score+=.1;
+ document.getElementById("score").textContent=Math.floor(score);
+ document.getElementById("coin").textContent=coins;
+
+ requestAnimationFrame(loop);
+}
+
+document.addEventListener("keydown",e=>{
+ if(e.key=="ArrowLeft")left();
+ if(e.key=="ArrowRight")right();
+ if(e.key=="ArrowUp"||e.key==" ")jump();
+});
+</script>
+</body>
+</html>

@@ -3,416 +3,539 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>STREET RUNNER 3D</title>
+<title>Street Runner 3D</title>
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070b;color:#fff;font-family:Arial}
-body{touch-action:none}
-canvas{position:fixed;inset:0;width:100%;height:100%}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#06101d;font-family:Arial,sans-serif;color:white;touch-action:none}
+#game{position:fixed;inset:0}
+canvas{display:block;width:100%;height:100%}
 
-.screen{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:linear-gradient(#07152bd9,#05070bf2)}
-.logo{font-size:42px;font-weight:900;text-shadow:0 5px 20px #000;margin-bottom:8px}
-.sub{opacity:.8;margin-bottom:25px}
-.menuBtns{display:flex;flex-direction:column;gap:12px;width:75%;max-width:330px}
-button{border:0;border-radius:15px;padding:15px;font-size:19px;font-weight:800;color:white;background:#1683ff;box-shadow:0 6px 20px #0008}
-button:active{transform:scale(.96)}
-.shop{background:#8b5cf6}
-.mission{background:#f59e0b}
-.character{background:#10b981}
+#menu{
+ position:fixed;inset:0;z-index:10;
+ display:flex;flex-direction:column;align-items:center;
+ justify-content:center;
+ background:
+ radial-gradient(circle at 50% 20%,rgba(30,130,255,.35),transparent 35%),
+ linear-gradient(180deg,rgba(2,15,35,.2),rgba(2,8,18,.9));
+}
+.logo{text-align:center;margin-bottom:25px;text-shadow:0 5px 15px #000}
+.logo .small{font-size:16px;font-weight:bold;letter-spacing:4px}
+.logo h1{
+ margin:3px 0;font-size:46px;line-height:.9;
+ font-weight:1000;font-style:italic;
+ color:#fff;
+ text-shadow:0 4px 0 #1265c7,0 8px 18px #000;
+}
+.logo b{color:#ffd21c;font-size:34px;font-style:italic}
+.btn{
+ width:260px;height:58px;margin:7px;
+ border:0;border-radius:18px;
+ color:white;font-size:20px;font-weight:900;
+ box-shadow:0 7px 15px rgba(0,0,0,.45);
+}
+.play{background:linear-gradient(180deg,#27df68,#0b9e45)}
+.mission{background:linear-gradient(180deg,#ffbd25,#ee7700)}
+.shop{background:linear-gradient(180deg,#c44dff,#7020d8)}
+.characters{background:linear-gradient(180deg,#299dff,#1262dc)}
 
-#hud{position:fixed;z-index:4;top:10px;left:0;right:0;display:none;justify-content:space-around;font-weight:bold;font-size:18px;text-shadow:0 2px 5px #000}
-
-.panel{display:none;position:fixed;z-index:6;inset:0;background:#08111ef7;padding:30px 20px}
-.panel h2{text-align:center;font-size:30px}
-.card{background:#ffffff12;border:1px solid #ffffff20;border-radius:15px;padding:15px;margin:10px 0}
-.close{position:absolute;right:18px;top:15px;background:#ef4444;padding:10px 16px}
+#hud{
+ position:fixed;top:12px;left:0;right:0;z-index:5;
+ display:none;justify-content:space-between;padding:0 12px;
+}
+.hudbox{
+ background:rgba(3,15,35,.78);border:1px solid #287bd0;
+ border-radius:16px;padding:9px 13px;font-weight:900;
+ backdrop-filter:blur(8px)
+}
+#panels{
+ position:fixed;inset:0;z-index:20;display:none;
+ background:rgba(0,5,15,.9);align-items:center;justify-content:center;
+ padding:20px;
+}
+.panel{
+ width:min(430px,94vw);max-height:88vh;overflow:auto;
+ background:linear-gradient(180deg,#071c39,#020a18);
+ border:2px solid #2379d7;border-radius:24px;padding:18px;
+ box-shadow:0 20px 60px #000;
+}
+.panel h2{margin:0 0 15px;text-align:center;font-size:28px}
+.close{
+ float:right;background:#162d4d;color:white;border:1px solid #4389d0;
+ width:38px;height:38px;border-radius:50%;font-size:20px
+}
+.card{
+ margin:10px 0;padding:15px;border-radius:16px;
+ background:rgba(16,51,90,.7);border:1px solid #235f9e
+}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.buy{
+ border:0;border-radius:12px;background:#19c85a;color:white;
+ font-weight:900;padding:10px 16px
+}
+.char{
+ display:inline-block;width:30%;margin:1%;
+ padding:10px 4px;text-align:center;
+ background:#09264a;border:1px solid #287bd0;border-radius:15px;
+}
+.avatar{font-size:48px}
+#hint{
+ position:fixed;bottom:15px;left:50%;transform:translateX(-50%);
+ z-index:6;display:none;background:rgba(0,0,0,.65);
+ padding:10px 18px;border-radius:20px;font-size:13px;
+}
 </style>
 </head>
 <body>
 
-<div id="menu" class="screen">
-<div class="logo">🏃 STREET RUNNER</div>
-<div class="sub">3D ENDLESS RUNNER</div>
-<div class="menuBtns">
-<button onclick="play()">▶️ PLAY</button>
-<button class="mission" onclick="showPanel('missions')">🎯 MISSIONS</button>
-<button class="shop" onclick="showPanel('shop')">🛍️ SHOP</button>
-<button class="character" onclick="showPanel('characters')">🧍 CHARACTERS</button>
-</div>
+<div id="game"></div>
+
+<div id="menu">
+  <div class="logo">
+    <div class="small">3D ENDLESS</div>
+    <h1>STREET</h1>
+    <b>RUNNER</b>
+  </div>
+  <button class="btn play" onclick="startGame()">▶ PLAY</button>
+  <button class="btn mission" onclick="openPanel('missions')">🎯 MISSIONS</button>
+  <button class="btn shop" onclick="openPanel('shop')">🛒 SHOP</button>
+  <button class="btn characters" onclick="openPanel('characters')">👤 CHARACTERS</button>
 </div>
 
 <div id="hud">
-<span>🪙 <b id="coins">0</b></span>
-<span>🏆 <b id="score">0</b></span>
-<span>⚡ <b id="speed">1</b></span>
+  <div class="hudbox">🪙 <span id="coins">0</span></div>
+  <div class="hudbox">🏆 <span id="score">0</span></div>
 </div>
 
-<div id="missions" class="panel">
-<button class="close" onclick="closePanels()">X</button>
-<h2>🎯 MISSIONS</h2>
-<div class="card">🪙 20 ta coin yig‘ing<br><b id="m1">0 / 20</b></div>
-<div class="card">🏃 500 metr yuguring<br><b id="m2">0 / 500</b></div>
-<div class="card">🚧 10 ta to‘siqdan qoching<br><b id="m3">0 / 10</b></div>
-</div>
+<div id="hint">← → YO‘NALISH • ↑ SAKRASH • ↓ SIRPANISH</div>
 
-<div id="shop" class="panel">
-<button class="close" onclick="closePanels()">X</button>
-<h2>🛍️ SHOP</h2>
-<div class="card">⚡ Speed Upgrade<br><button onclick="buySpeed()">100 🪙</button></div>
-<div class="card">💰 Coin Multiplier<br><button onclick="buyCoins()">250 🪙</button></div>
-</div>
-
-<div id="characters" class="panel">
-<button class="close" onclick="closePanels()">X</button>
-<h2>🧍 CHARACTERS</h2>
-<div class="card">🧑 STREET BOY<br><small>Default character</small></div>
-<div class="card">🤖 CYBER RUNNER<br><button onclick="selectCharacter('cyber')">SELECT</button></div>
-<div class="card">🥷 SHADOW RUNNER<br><button onclick="selectCharacter('shadow')">SELECT</button></div>
+<div id="panels">
+ <div class="panel">
+   <button class="close" onclick="closePanels()">×</button>
+   <div id="panelContent"></div>
+ </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 
 <script>
 let scene,camera,renderer;
-let player;
+let player,road;
 let running=false;
-let lane=1;
+let lane=0;
+let targetLane=0;
+let speed=.32;
+let distance=0;
+let coinCount=0;
 let score=0;
-let coins=0;
-let speed=0.22;
 let objects=[];
-let lastSpawn=0;
-let lastCoin=0;
-let touchX=0,touchY=0;
-let selected="normal";
+let coins=[];
+let clock;
+let jumpY=0;
+let jumping=false;
+let sliding=false;
+let slideTime=0;
 
-const coinEl=document.getElementById("coins");
-const scoreEl=document.getElementById("score");
-const speedEl=document.getElementById("speed");
+const laneX=[-3,0,3];
 
 function init(){
  scene=new THREE.Scene();
- scene.background=new THREE.Color(0x07111c);
- scene.fog=new THREE.Fog(0x07111c,25,90);
+ scene.background=new THREE.Color(0x07182c);
+ scene.fog=new THREE.Fog(0x07182c,35,130);
 
- camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,200);
- camera.position.set(0,5,9);
- camera.lookAt(0,1,0);
+ camera=new THREE.PerspectiveCamera(
+   65,innerWidth/innerHeight,.1,250
+ );
+ camera.position.set(0,5.5,10);
+ camera.lookAt(0,2,-25);
 
  renderer=new THREE.WebGLRenderer({antialias:true});
  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
  renderer.setSize(innerWidth,innerHeight);
- document.body.appendChild(renderer.domElement);
+ document.getElementById("game").appendChild(renderer.domElement);
 
- const light=new THREE.HemisphereLight(0xffffff,0x223344,2);
+ const amb=new THREE.HemisphereLight(0x8fc8ff,0x172033,2);
+ scene.add(amb);
+
+ const light=new THREE.DirectionalLight(0xffffff,2);
+ light.position.set(5,12,8);
  scene.add(light);
 
- const sun=new THREE.DirectionalLight(0xffffff,2);
- sun.position.set(5,10,5);
- scene.add(sun);
-
- createRoad();
+ createWorld();
  createPlayer();
 
- addEventListener("resize",resize);
- renderer.domElement.addEventListener("touchstart",touchStart,{passive:true});
- renderer.domElement.addEventListener("touchend",touchEnd,{passive:true});
-
+ clock=new THREE.Clock();
  animate();
+
+ addSwipe();
 }
 
-function createRoad(){
- const road=new THREE.Mesh(
-  new THREE.BoxGeometry(9,.2,180),
-  new THREE.MeshStandardMaterial({color:0x30343b})
- );
- road.position.y=-.15;
- road.position.z=-55;
+function mat(color){
+ return new THREE.MeshStandardMaterial({color:color,roughness:.7});
+}
+
+function box(w,h,d,color){
+ return new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(color));
+}
+
+function createWorld(){
+ road=box(11,.3,220,0x202833);
+ road.position.set(0,-.25,-55);
  scene.add(road);
 
- for(let x of [-1.5,1.5]){
-  const line=new THREE.Mesh(
-   new THREE.BoxGeometry(.08,.03,180),
-   new THREE.MeshBasicMaterial({color:0xffffff})
-  );
-  line.position.set(x,0,-55);
-  scene.add(line);
+ const sidewalk1=box(3,.45,220,0x39424c);
+ sidewalk1.position.set(-7,-.1,-55);
+ scene.add(sidewalk1);
+
+ const sidewalk2=box(3,.45,220,0x39424c);
+ sidewalk2.position.set(7,-.1,-55);
+ scene.add(sidewalk2);
+
+ for(let z=-5;z>-180;z-=10){
+   for(const x of [-1.5,1.5]){
+     const line=box(.18,.04,4,0xf7f7f7);
+     line.position.set(x,.02,z);
+     scene.add(line);
+   }
+
+   createBuilding(-11,z);
+   createBuilding(11,z);
  }
 
- const sideMat=new THREE.MeshStandardMaterial({color:0x10251b});
-
- for(let x of [-7,7]){
-  const side=new THREE.Mesh(
-   new THREE.BoxGeometry(5,.2,180),
-   sideMat
-  );
-  side.position.set(x,-.15,-55);
-  scene.add(side);
+ for(let i=0;i<35;i++){
+   const c=createCoin();
+   c.position.set(laneX[Math.floor(Math.random()*3)],1.2,-15-i*7);
+   coins.push(c);
+   scene.add(c);
  }
 
- for(let z=0;z>-160;z-=8){
-  const lamp1=makeLamp(-5,z);
-  const lamp2=makeLamp(5,z);
-  scene.add(lamp1,lamp2);
+ for(let i=0;i<22;i++){
+   const o=createObstacle();
+   o.position.set(laneX[Math.floor(Math.random()*3)],.75,-28-i*10);
+   objects.push(o);
+   scene.add(o);
  }
 }
 
-function makeLamp(x,z){
- const g=new THREE.Group();
+function createBuilding(x,z){
+ const h=5+Math.random()*12;
+ const b=box(5,h,8,Math.random()>.5?0x152b45:0x1b2638);
+ b.position.set(x,h/2-.2,z);
+ scene.add(b);
 
- const pole=new THREE.Mesh(
-  new THREE.CylinderGeometry(.06,.06,3,8),
-  new THREE.MeshStandardMaterial({color:0x555b63})
- );
- pole.position.y=1.5;
-
- const bulb=new THREE.Mesh(
-  new THREE.SphereGeometry(.18,12,12),
-  new THREE.MeshBasicMaterial({color:0xffe99a})
- );
- bulb.position.y=3.1;
-
- g.add(pole,bulb);
- g.position.set(x,0,z);
- return g;
+ for(let y=1;y<h;y+=2){
+   for(let xx=-1;xx<=1;xx++){
+     const w=box(.35,.55,.08,0xffc94a);
+     w.position.set(x+xx*1.3,y,z-4.04);
+     scene.add(w);
+   }
+ }
 }
 
 function createPlayer(){
  player=new THREE.Group();
 
- const body=new THREE.Mesh(
-  new THREE.BoxGeometry(.7,1.1,.45),
-  new THREE.MeshStandardMaterial({color:0x1683ff})
- );
- body.position.y=1.15;
+ const body=box(1.15,1.55,.7,0x0879e8);
+ body.position.y=1.65;
+ player.add(body);
 
  const head=new THREE.Mesh(
-  new THREE.SphereGeometry(.32,16,16),
-  new THREE.MeshStandardMaterial({color:0xffc49b})
+   new THREE.SphereGeometry(.52,20,20),mat(0xf0b27a)
  );
- head.position.y=2;
+ head.position.y=2.8;
+ player.add(head);
 
- const legMat=new THREE.MeshStandardMaterial({color:0x22252b});
+ const cap=box(1.05,.22,.85,0x101827);
+ cap.position.set(0,3.25,0);
+ player.add(cap);
 
- for(let x of [-.2,.2]){
-  const leg=new THREE.Mesh(
-   new THREE.BoxGeometry(.18,.8,.22),
-   legMat
-  );
-  leg.position.set(x,.4,0);
-  player.add(leg);
- }
+ const leg1=box(.38,1.25,.42,0x101827);
+ leg1.position.set(-.32,.55,0);
+ player.add(leg1);
 
- player.add(body,head);
+ const leg2=box(.38,1.25,.42,0x101827);
+ leg2.position.set(.32,.55,0);
+ player.add(leg2);
+
+ const arm1=box(.3,1.2,.3,0x0879e8);
+ arm1.position.set(-.75,1.65,0);
+ arm1.rotation.z=-.18;
+ player.add(arm1);
+
+ const arm2=box(.3,1.2,.3,0x0879e8);
+ arm2.position.set(.75,1.65,0);
+ arm2.rotation.z=.18;
+ player.add(arm2);
+
  player.position.set(0,0,4);
  scene.add(player);
 }
 
-function laneX(){
- return (lane-1)*1.5;
+function createCoin(){
+ const c=new THREE.Mesh(
+   new THREE.CylinderGeometry(.42,.42,.12,24),
+   new THREE.MeshStandardMaterial({
+     color:0xffc400,metalness:.8,roughness:.2
+   })
+ );
+ c.rotation.z=Math.PI/2;
+ return c;
 }
 
 function createObstacle(){
- const g=new THREE.Group();
+ const o=box(1.8,1.4,1,0xe34235);
 
- const box=new THREE.Mesh(
-  new THREE.BoxGeometry(1.2,1.2,.9),
-  new THREE.MeshStandardMaterial({color:0xe53935})
- );
- box.position.y=.6;
-
- const stripe=new THREE.Mesh(
-  new THREE.BoxGeometry(1.25,.15,.93),
-  new THREE.MeshBasicMaterial({color:0xffee58})
- );
- stripe.position.y=.8;
-
- g.add(box,stripe);
- g.position.set(laneXRandom(),0,-55);
- scene.add(g);
- objects.push({mesh:g,type:"obstacle"});
+ const stripe=box(1.9,.25,1.05,0xffffff);
+ stripe.position.y=.2;
+stripe.position.y=.2;
+o.add(stripe);
+return o;
 }
 
-function createCoin(){
- const coin=new THREE.Mesh(
-  new THREE.TorusGeometry(.3,.09,10,20),
-  new THREE.MeshStandardMaterial({color:0xffd21f,metalness:.7})
- );
- coin.rotation.x=Math.PI/2;
- coin.position.set(laneXRandom(),1.2,-55);
- scene.add(coin);
- objects.push({mesh:coin,type:"coin"});
+function startGame(){
+running=true;
+distance=0;
+score=0;
+coinCount=0;
+lane=0;
+targetLane=0;
+
+document.getElementById("menu").style.display="none";
+document.getElementById("hud").style.display="flex";
+document.getElementById("hint").style.display="block";
+resetObjects();
 }
 
-function laneXRandom(){
- return (Math.floor(Math.random()*3)-1)*1.5;
+function resetObjects(){
+objects.forEach((o,i)=>{
+o.position.z=-28-i*10;
+o.position.x=laneX[Math.floor(Math.random()*3)];
+});
+
+coins.forEach((c,i)=>{
+c.position.z=-15-i*7;
+c.position.x=laneX[Math.floor(Math.random()*3)];
+});
 }
 
-function play(){
- document.getElementById("menu").style.display="none";
- document.getElementById("hud").style.display="flex";
- running=true;
- score=0;
- coins=0;
- speed=.22;
-}
+function endGame(){
+running=false;
+document.getElementById("hud").style.display="none";
+document.getElementById("hint").style.display="none";
 
-function gameOver(){
- running=false;
- alert("💥 O‘YIN TUGADI!\n\n🏆 Ball: "+Math.floor(score)+"\n🪙 Coin: "+coins);
- document.getElementById("hud").style.display="none";
- document.getElementById("menu").style.display="flex";
+setTimeout(()=>{
+alert("O‘yin tugadi! 🏆 Ball: "+Math.floor(score)+"  🪙 Coin: "+coinCount);
+document.getElementById("menu").style.display="flex";
+},100);
 }
 
 function moveLeft(){
- if(running)lane=Math.max(0,lane-1);
+if(!running)return;
+targetLane=Math.max(-1,targetLane-1);
 }
 
 function moveRight(){
- if(running)lane=Math.min(2,lane+1);
+if(!running)return;
+targetLane=Math.min(1,targetLane+1);
 }
 
 function jump(){
- if(!running)return;
- player.position.y=.9;
- setTimeout(()=>player.position.y=0,500);
+if(!running||jumping)return;
+jumping=true;
+jumpY=0;
 }
 
 function slide(){
- if(!running)return;
- player.scale.y=.5;
- setTimeout(()=>player.scale.y=1,500);
-}
-
-function touchStart(e){
- const t=e.changedTouches[0];
- touchX=t.clientX;
- touchY=t.clientY;
-}
-
-function touchEnd(e){
- const t=e.changedTouches[0];
- const dx=t.clientX-touchX;
- const dy=t.clientY-touchY;
-
- if(Math.max(Math.abs(dx),Math.abs(dy))<35)return;
-
- if(Math.abs(dx)>Math.abs(dy)){
-  if(dx>0)moveRight();
-  else moveLeft();
- }else{
-  if(dy<0)jump();
-  else slide();
- }
-}
-
-function update(){
- if(!running)return;
-
- player.position.x+=(laneX()-player.position.x)*.2;
-
- const now=performance.now();
-
- if(now-lastSpawn>Math.max(500,1100-speed*1000)){
-  createObstacle();
-  lastSpawn=now;
- }
-
- if(now-lastCoin>700){
-  createCoin();
-  lastCoin=now;
- }
-
- for(let i=objects.length-1;i>=0;i--){
-  const o=objects[i];
-  o.mesh.position.z+=speed;
-
-  if(o.type==="coin"){
-   o.mesh.rotation.z+=.08;
-
-   if(
-    o.mesh.position.z>2 &&
-    Math.abs(o.mesh.position.x-player.position.x)<.7
-   ){
-    coins++;
-    scene.remove(o.mesh);
-    objects.splice(i,1);
-    continue;
-   }
-  }
-
-  if(o.type==="obstacle"){
-   if(
-    o.mesh.position.z>2 &&
-    Math.abs(o.mesh.position.x-player.position.x)<.7
-   ){
-    gameOver();
-    return;
-   }
-  }
-
-  if(o.mesh.position.z>10){
-   scene.remove(o.mesh);
-   objects.splice(i,1);
-  }
- }
-
- score+=.03;
- speed+=.00003;
-
- coinEl.textContent=coins;
- scoreEl.textContent=Math.floor(score);
- speedEl.textContent=Math.floor(speed*5);
+if(!running||sliding)return;
+sliding=true;
+slideTime=0;
+player.scale.y=.55;
 }
 
 function animate(){
- requestAnimationFrame(animate);
- update();
+requestAnimationFrame(animate);
 
- if(running){
-  camera.position.x+=(player.position.x*.25-camera.position.x)*.05;
-  camera.lookAt(player.position.x,1,-5);
- }
+const dt=clock.getDelta();
 
- renderer.render(scene,camera);
+if(running){
+distance+=speed;
+score+=speed*.35;
+
+lane+=(targetLane-lane)*.15;
+player.position.x=laneX[Math.round(lane)];
+
+if(jumping){
+jumpY+=dt*3.2;
+player.position.y=Math.sin(jumpY)*2.2;
+
+if(jumpY>=Math.PI){
+jumping=false;
+player.position.y=0;
+}
 }
 
-function resize(){
- camera.aspect=innerWidth/innerHeight;
- camera.updateProjectionMatrix();
- renderer.setSize(innerWidth,innerHeight);
+if(sliding){
+slideTime+=dt;
+if(slideTime>.7){
+sliding=false;
+player.scale.y=1;
+}
 }
 
-function showPanel(id){
- document.getElementById(id).style.display="block";
+objects.forEach(o=>{
+o.position.z+=speed;
+
+if(o.position.z>12){
+o.position.z=-190-Math.random()*40;
+o.position.x=laneX[Math.floor(Math.random()*3)];
+}
+
+if(Math.abs(o.position.z-player.position.z)<1.25 &&
+Math.abs(o.position.x-player.position.x)<1.1 &&
+player.position.y<1.0 &&
+!sliding){
+endGame();
+}
+});
+
+coins.forEach(c=>{
+c.rotation.y+=.08;
+c.position.z+=speed;
+
+if(c.position.z>12){
+c.position.z=-190-Math.random()*60;
+c.position.x=laneX[Math.floor(Math.random()*3)];
+}
+
+if(Math.abs(c.position.z-player.position.z)<1.3 &&
+Math.abs(c.position.x-player.position.x)<1){
+coinCount++;
+c.position.z=-190-Math.random()*60;
+c.position.x=laneX[Math.floor(Math.random()*3)];
+document.getElementById("coins").textContent=coinCount;
+}
+});
+
+document.getElementById("score").textContent=Math.floor(score);
+}
+
+camera.position.x+=(player.position.x*.25-camera.position.x)*.05;
+camera.position.y+=(5.5+player.position.y*.25-camera.position.y)*.05;
+camera.lookAt(player.position.x*.15,2,-25);
+
+renderer.render(scene,camera);
+}
+
+let sx=0,sy=0;
+
+function addSwipe(){
+renderer.domElement.addEventListener("touchstart",e=>{
+const t=e.touches[0];
+sx=t.clientX;
+sy=t.clientY;
+},{passive:true});
+
+renderer.domElement.addEventListener("touchend",e=>{
+const t=e.changedTouches[0];
+const dx=t.clientX-sx;
+const dy=t.clientY-sy;
+
+if(Math.max(Math.abs(dx),Math.abs(dy))<35)return;
+
+if(Math.abs(dx)>Math.abs(dy)){
+if(dx<0)moveLeft();
+else moveRight();
+}else{
+if(dy<0)jump();
+else slide();
+}
+},{passive:true});
+}
+
+document.addEventListener("keydown",e=>{
+if(e.key==="ArrowLeft")moveLeft();
+if(e.key==="ArrowRight")moveRight();
+if(e.key==="ArrowUp")jump();
+if(e.key==="ArrowDown")slide();
+});
+
+function openPanel(type){
+document.getElementById("panels").style.display="flex";
+
+const p=document.getElementById("panelContent");
+
+if(type==="missions"){
+p.innerHTML=`
+<h2>🎯 MISSIONS</h2>
+<div class="card">🪙 20 ta coin yig‘ing<br>0 / 20<br>🏆 +50 coin</div>
+<div class="card">🏃 500 metr yuguring<br>0 / 500<br>🏆 +100 coin</div>
+<div class="card">🚧 10 ta to‘siqdan qoching<br>0 / 10<br>🏆 +150 coin</div>
+<div class="card">⭐ 1 marta sakrang<br>0 / 1<br>🏆 +50 coin</div>`;
+}
+
+if(type==="shop"){
+p.innerHTML=`
+<h2>🛒 SHOP</h2>
+<div class="card">
+<div class="row">
+<b>⚡ SPEED UPGRADE</b>
+<button class="buy">100 🪙</button>
+</div>
+<small>Yugurish tezligini oshiradi</small>
+</div>
+
+<div class="card">
+<div class="row">
+<b>🪙 COIN MULTIPLIER</b>
+<button class="buy">250 🪙</button>
+</div>
+<small>Ko‘proq coin olish imkoniyati</small>
+</div>
+
+<div class="card">
+<div class="row">
+<b>🛡️ SHIELD</b>
+<button class="buy">300 🪙</button>
+</div>
+<small>Bir marta to‘qnashuvdan himoya</small>
+</div>`;
+}
+
+if(type==="characters"){
+p.innerHTML=`
+<h2>👤 CHARACTERS</h2>
+
+<div class="char">
+<div class="avatar">🧢</div>
+<b>STREET BOY</b><br>
+<small>SELECTED</small>
+</div>
+
+<div class="char">
+<div class="avatar">🤖</div>
+<b>CYBER</b><br>
+<button class="buy">SELECT</button>
+</div>
+
+<div class="char">
+<div class="avatar">🥷</div>
+<b>SHADOW</b><br>
+<button class="buy">SELECT</button>
+</div>`;
+}
 }
 
 function closePanels(){
- document.querySelectorAll(".panel").forEach(x=>x.style.display="none");
+document.getElementById("panels").style.display="none";
 }
 
-function buySpeed(){
- if(coins>=100){
-  coins-=100;
-  speed+=.05;
-  alert("⚡ Speed upgrade olindi!");
- }else alert("🪙 Coin yetarli emas!");
-}
-
-function buyCoins(){
- if(coins>=250){
-  coins-=250;
-  alert("💰 Coin multiplier olindi!");
- }else alert("🪙 Coin yetarli emas!");
-}
-
-function selectCharacter(name){
- selected=name;
- alert(name.toUpperCase()+" tanlandi!");
- closePanels();
-}
+window.addEventListener("resize",()=>{
+camera.aspect=innerWidth/innerHeight;
+camera.updateProjectionMatrix();
+renderer.setSize(innerWidth,innerHeight);
+});
 
 init();
 </script>
+
 </body>
 </html>

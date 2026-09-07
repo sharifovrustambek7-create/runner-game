@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>Street Runner</title>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+}
+
+body {
+    background: #111;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+}
+
+#game {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    background: #222;
+}
+
+#hud {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    text-shadow: 0 2px 3px #000;
+}
+
+#startScreen,
+#gameOver {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0,0,0,.72);
+    color: white;
+    text-align: center;
+}
+
+#gameOver {
+    display: none;
+}
+
+.title {
+    font-size: 42px;
+    font-weight: 900;
+    margin-bottom: 12px;
+}
+
+.subtitle {
+    font-size: 18px;
+    margin-bottom: 25px;
+}
+
+button {
+    border: 0;
+    border-radius: 18px;
+    padding: 16px 35px;
+    font-size: 20px;
+    font-weight: bold;
+    background: #ffd21f;
+    color: #111;
+}
+
+#controls {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 18px;
+    z-index: 15;
+    display: flex;
+    justify-content: space-around;
+    pointer-events: none;
+}
+
+.control {
+    width: 85px;
+    height: 65px;
+    border-radius: 20px;
+    background: rgba(255,255,255,.22);
+    border: 2px solid rgba(255,255,255,.5);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 30px;
+    pointer-events: auto;
+}
+
+#jump {
+    width: 110px;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="game"></canvas>
+
+<div id="hud">
+    <div>🪙 <span id="coins">0</span></div>
+    <div>🏆 <span id="score">0</span></div>
+    <div>⚡ <span id="speed">1</span></div>
+</div>
+
+<div id="startScreen">
+    <div class="title">🏃 STREET RUNNER</div>
+    <div class="subtitle">
+        Coin yig‘ing va to‘siqlardan qoching!
+    </div>
+    <button id="startBtn">▶ BOSHLASH</button>
+</div>
+
+<div id="gameOver">
+    <div class="title">💥 GAME OVER</div>
+    <div class="subtitle">
+        Hisob: <b id="finalScore">0</b><br>
+        Coin: 🪙 <b id="finalCoins">0</b><br>
+        Rekord: 🏆 <b id="bestScore">0</b>
+    </div>
+    <button id="restartBtn">🔄 QAYTA O‘YNASH</button>
+</div>
+
+<div id="controls">
+    <div class="control" id="left">⬅️</div>
+    <div class="control" id="jump">⬆️ SAKRA</div>
+    <div class="control" id="right">➡️</div>
+</div>
+
+<script>
+const tg = window.Telegram && window.Telegram.WebApp
+    ? window.Telegram.WebApp
+    : null;
+
+if (tg) {
+    tg.ready();
+    tg.expand();
+}
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let W = 0;
+let H = 0;
+
+function resize() {
+    W = window.innerWidth;
+    H = window.innerHeight;
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+window.addEventListener("resize", resize);
+resize();
+
+let running = false;
+
+let score = 0;
+let coins = 0;
+let best = Number(localStorage.getItem("runner_best") || 0);
+
+let lane = 1;
+
+let player = {
+    x: 0,
+    y: 0,
+    width: 42,
+    height: 58,
+    jumpY: 0,
+    velocityY: 0,
+    jumping: false
+};
+
+let obstacles = [];
+let coinList = [];
+
+let spawnTimer = 0;
+let coinTimer = 0;
+
+let roadOffset = 0;
+
+let gameSpeed = 7;
+
+function roadWidth() {
+    return Math.min(W * 0.82, 420);
+}
+
+function laneWidth() {
+    return roadWidth() / 3;
+}
+
+function roadLeft() {
+    return (W - roadWidth()) / 2;
+}
+
+function laneX(index) {
+    return roadLeft() + laneWidth() * index + laneWidth() / 2;
+}
+
+function resetGame() {
+
+    score = 0;
+    coins = 0;
+    lane = 1;
+
+    gameSpeed = 7;
+
+    obstacles = [];
+    coinList = [];
+
+    spawnTimer = 0;
+    coinTimer = 0;
+
+    player.x = laneX(lane);
+    player.y = H - 150;
+    player.jumpY = 0;
+    player.velocityY = 0;
+    player.jumping = false;
+
+    updateHud();
+}
+
+function startGame() {
+
+    resetGame();
+
+    running = true;
+
+    document.getElementById("startScreen").style.display = "none";
+    document.getElementById("gameOver").style.display = "none";
+
+    requestAnimationFrame(loop);
+}
+
+function endGame() {
+
+    running = false;
+
+    if (score > best) {
+        best = Math.floor(score);
+        localStorage.setItem("runner_best", best);
+    }
+
+    document.getElementById("finalScore").textContent = Math.floor(score);
+    document.getElementById("finalCoins").textContent = coins;
+    document.getElementById("bestScore").textContent =
